@@ -25,4 +25,3 @@ jobs:
             BYTEBASE_PROJECT: "projects/project-sample"
             BYTEBASE_TARGETS: "instances/prod-sample-instance/databases/hr_prod"
             FILE_PATTERN: "migrations/*.sql"
-            GITHUB_PR_NUMBER: ${{ github.event.pull_request.number }}
