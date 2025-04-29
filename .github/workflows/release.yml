@@ -22,12 +22,12 @@ jobs:
     runs-on: ubuntu-latest # use self-hosted machines if your Bytebase runs in internal networks.
     environment: test
     env:
-      BYTEBASE_URL: https://demo.bytebase.com
-      BYTEBASE_SERVICE_ACCOUNT: ci@service.bytebase.com
-      BYTEBASE_PROJECT: "projects/project-sample"
+      BYTEBASE_URL: https://b0b2-160-30-128-222.ngrok-free.app
+      BYTEBASE_SERVICE_ACCOUNT: api-example@service.bytebase.com
+      BYTEBASE_PROJECT: "projects/test-project"
       # The Bytebase rollout pipeline will deploy to 'test' and 'prod' environments.
       # 'deploy-to-test' job rollouts the 'test' stage and 'deploy-to-prod' job rollouts the 'prod' stage.
-      BYTEBASE_TARGETS: "instances/test-sample-instance/databases/hr_test,instances/prod-sample-instance/databases/hr_prod"
+      BYTEBASE_TARGETS: "instances/daily-13306/databases/xxl_version"
       FILE_PATTERN: "migrations/*.sql"
     outputs:
       bytebase-plan: ${{ steps.create-plan.outputs.plan }}
@@ -41,7 +41,7 @@ jobs:
         with:
           bytebase-url: ${{ env.BYTEBASE_URL }}
           service-key: ${{ env.BYTEBASE_SERVICE_ACCOUNT }}
-          service-secret: ${{secrets.BYTEBASE_SERVICE_ACCOUNT_SECRET}} # Please use secrets for sensitive data in production.
+          service-secret: bbs_fbvezvyQV8iRSymgVBOb # Please use secrets for sensitive data in production.
       - name: Create release
         id: create-release
         uses: bytebase/create-release-action@v1
@@ -82,8 +82,8 @@ jobs:
     runs-on: ubuntu-latest
     environment: prod
     env:
-      BYTEBASE_URL: https://demo.bytebase.com
-      BYTEBASE_SERVICE_ACCOUNT: ci@service.bytebase.com
+      BYTEBASE_URL: https://b0b2-160-30-128-222.ngrok-free.app
+      BYTEBASE_SERVICE_ACCOUNT: api-example@service.bytebase.com
     if: ${{ needs.deploy-to-test.outputs.deployment-required == 'true' }}
     steps:
       - name: Checkout
@@ -94,7 +94,7 @@ jobs:
         with:
           bytebase-url: ${{ env.BYTEBASE_URL }}
           service-key: ${{ env.BYTEBASE_SERVICE_ACCOUNT }}
-          service-secret: ${{secrets.BYTEBASE_SERVICE_ACCOUNT_SECRET}} # Please use secrets for sensitive data in production.
+          service-secret: bbs_fbvezvyQV8iRSymgVBOb # Please use secrets for sensitive data in production.
       - name: Rollout
         id: rollout
         uses: bytebase/rollout-action@v2

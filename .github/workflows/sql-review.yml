@@ -14,10 +14,10 @@ jobs:
     runs-on: ubuntu-latest # use self-hosted machines if your Bytebase runs in internal networks.
     env:
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # set GITHUB_TOKEN because the 'Check release' step needs it to comment the pull request with check results.
-      BYTEBASE_URL: https://demo.bytebase.com
-      BYTEBASE_SERVICE_ACCOUNT: ci@service.bytebase.com
-      BYTEBASE_PROJECT: "projects/project-sample"
-      BYTEBASE_TARGETS: "instances/test-sample-instance/databases/hr_test"
+      BYTEBASE_URL: https://b0b2-160-30-128-222.ngrok-free.app
+      BYTEBASE_SERVICE_ACCOUNT: api-example@service.bytebase.com
+      BYTEBASE_PROJECT: "projects/test-project"
+      BYTEBASE_TARGETS: "instances/daily-13306/databases/xxl_version"
       FILE_PATTERN: "migrations/*.sql"
     steps:
       - name: Checkout
@@ -28,7 +28,7 @@ jobs:
         with:
           bytebase-url: ${{ env.BYTEBASE_URL }}
           service-key: ${{ env.BYTEBASE_SERVICE_ACCOUNT }}
-          service-secret: ${{secrets.BYTEBASE_SERVICE_ACCOUNT_SECRET}} # Please use secrets for sensitive data in production.
+          service-secret: bbs_fbvezvyQV8iRSymgVBOb # Please use secrets for sensitive data in production.
       - name: Check release
         uses: bytebase/create-release-action@v1
         with:
@@ -46,10 +46,10 @@ jobs:
     runs-on: ubuntu-latest
     env:
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # set GITHUB_TOKEN because the 'Check release' step needs it to comment the pull request with check results.
-      BYTEBASE_URL: https://demo.bytebase.com
-      BYTEBASE_SERVICE_ACCOUNT: ci@service.bytebase.com
-      BYTEBASE_PROJECT: "projects/project-sample"
-      BYTEBASE_TARGETS: "instances/prod-sample-instance/databases/hr_prod"
+      BYTEBASE_URL: https://b0b2-160-30-128-222.ngrok-free.app
+      BYTEBASE_SERVICE_ACCOUNT: api-example@service.bytebase.com
+      BYTEBASE_PROJECT: "projects/test-project"
+      BYTEBASE_TARGETS: "instances/daily-13306/databases/xxl_version"
       FILE_PATTERN: "migrations/*.sql"
     steps:
       - name: Checkout
@@ -60,7 +60,7 @@ jobs:
         with:
           bytebase-url: ${{ env.BYTEBASE_URL }}
           service-key: ${{ env.BYTEBASE_SERVICE_ACCOUNT }}
-          service-secret: ${{secrets.BYTEBASE_SERVICE_ACCOUNT_SECRET}} # Please use secrets for sensitive data in production.
+          service-secret: bbs_fbvezvyQV8iRSymgVBOb # Please use secrets for sensitive data in production.
       - name: Check release
         uses: bytebase/create-release-action@v1
         with:
