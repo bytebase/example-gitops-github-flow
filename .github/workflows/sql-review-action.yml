@@ -25,3 +25,6 @@ jobs:
             BYTEBASE_PROJECT: "projects/project-sample"
             BYTEBASE_TARGETS: "instances/prod-sample-instance/databases/hr_prod"
             FILE_PATTERN: "migrations/*.sql"
+        with:
+          entrypoint: bytebase-action
+          args: check --url ${{ env.BYTEBASE_URL }} --service-account ${{ env.BYTEBASE_SERVICE_ACCOUNT }} --project ${{ env.BYTEBASE_PROJECT }} --targets ${{ env.BYTEBASE_TARGETS }} --file-pattern ${{ env.FILE_PATTERN }}
