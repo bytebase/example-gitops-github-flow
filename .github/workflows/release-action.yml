@@ -1,0 +1,48 @@
+name: Rollout using bytebase-action image
+
+on:
+  push:
+    branches:
+      - main
+      - test-cd-action-1
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Build app and upload
+        run: |
+          echo "Building..."
+          echo "Build done!"
+          echo "Uploading..."
+          echo "Upload done!"
+  deploy-to-all:
+    needs: build
+    runs-on: ubuntu-latest # use self-hosted machines if your Bytebase runs in internal networks.
+    outputs:
+      bytebase-plan: ${{ steps.create-plan.outputs.plan }}
+      deployment-required: ${{ steps.create-plan.outputs.deployment-required }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: rollout
+        uses: docker://bytebase/bytebase-action:latest
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          BYTEBASE_URL: https://demo.bytebase.com
+          BYTEBASE_SERVICE_ACCOUNT: ci@service.bytebase.com
+          BYTEBASE_SERVICE_ACCOUNT_SECRET: ${{secrets.BYTEBASE_SERVICE_ACCOUNT_SECRET}}
+          BYTEBASE_PROJECT: "projects/project-sample"
+          BYTEBASE_TARGETS: "instances/prod-sample-instance/databases/hr_prod"
+          BYTEBASE_TARGET_STAGE: environments/test
+          FILE_PATTERN: "migrations/*.sql"
+          BYTEBASE_OUTPUT: ${{ runner.temp }}/bytebase-metadata.json
+        with:
+          entrypoint: bytebase-action
+          args: rollout --url=${{ env.BYTEBASE_URL }} --service-account=${{ env.BYTEBASE_SERVICE_ACCOUNT }} --service-account-secret=${{ env.BYTEBASE_SERVICE_ACCOUNT_SECRET }} --project=${{ env.BYTEBASE_PROJECT }} --file-pattern=${{ env.FILE_PATTERN }} --targets=${{ env.BYTEBASE_TARGETS }} --target-stage=${{ env.BYTEBASE_TARGET_STAGE }} --output=${{ env.BYTEBASE_OUTPUT }}
+      - name: Check output
+        run: |
+          echo "Output: ${{ runner.temp }}/bytebase-metadata.json"
+          cat ${{ runner.temp }}/bytebase-metadata.json
