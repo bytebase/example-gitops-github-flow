@@ -41,7 +41,7 @@ jobs:
           BYTEBASE_OUTPUT: ${{ runner.temp }}/bytebase-metadata.json
         with:
           entrypoint: /bin/sh
-          args: bytebase-action rollout --url=${{ env.BYTEBASE_URL }} --service-account=${{ env.BYTEBASE_SERVICE_ACCOUNT }} --service-account-secret=${{ env.BYTEBASE_SERVICE_ACCOUNT_SECRET }} --project=${{ env.BYTEBASE_PROJECT }} --file-pattern=${{ env.FILE_PATTERN }} --targets=${{ env.BYTEBASE_TARGETS }} --target-stage=${{ env.BYTEBASE_TARGET_STAGE }} --output=${{ env.BYTEBASE_OUTPUT }}
+          args: -c bytebase-action rollout --url=${{ env.BYTEBASE_URL }} --service-account=${{ env.BYTEBASE_SERVICE_ACCOUNT }} --service-account-secret=${{ env.BYTEBASE_SERVICE_ACCOUNT_SECRET }} --project=${{ env.BYTEBASE_PROJECT }} --file-pattern=${{ env.FILE_PATTERN }} --targets=${{ env.BYTEBASE_TARGETS }} --target-stage=${{ env.BYTEBASE_TARGET_STAGE }} --output=${{ env.BYTEBASE_OUTPUT }}
       - name: Check output
         run: |
           ls -al ${{ runner.temp }}
