@@ -21,13 +21,17 @@ jobs:
   deploy-to-all:
     needs: build
     runs-on: ubuntu-latest # use self-hosted machines if your Bytebase runs in internal networks.
+    # Note: The 'outputs' section below refers to 'steps.create-plan', 
+    # which is not defined in this job. You might need to adjust this 
+    # if you intend to output data from the 'rollout' step.
     outputs:
-      bytebase-plan: ${{ steps.create-plan.outputs.plan }}
+      bytebase-plan: ${{ steps.create-plan.outputs.plan }} 
       deployment-required: ${{ steps.create-plan.outputs.deployment-required }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
       - name: rollout
+        id: bytebase_rollout # Added an id for potential future use with outputs
         uses: docker://bytebase/bytebase-action:latest
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -38,12 +42,72 @@ jobs:
           BYTEBASE_TARGETS: "instances/test-sample-instance/databases/hr_test,instances/prod-sample-instance/databases/hr_prod"
           BYTEBASE_TARGET_STAGE: environments/test
           FILE_PATTERN: "migrations/*.sql"
-          BYTEBASE_OUTPUT: ${{ runner.temp }}/bytebase-metadata.json
+          # Define the output path using runner.temp; GitHub Actions should handle syncing this
+          BYTEBASE_OUTPUT_FILE_PATH: "${{ runner.temp }}/bytebase-metadata.json"
         with:
           entrypoint: /bin/sh
-          args: -c 'bytebase-action rollout --url=${{ env.BYTEBASE_URL }} --service-account=${{ env.BYTEBASE_SERVICE_ACCOUNT }} --service-account-secret=${{ env.BYTEBASE_SERVICE_ACCOUNT_SECRET }} --project=${{ env.BYTEBASE_PROJECT }} --file-pattern=${{ env.FILE_PATTERN }} --targets=${{ env.BYTEBASE_TARGETS }} --target-stage=${{ env.BYTEBASE_TARGET_STAGE }} --output=${{ env.BYTEBASE_OUTPUT }} && ls -al ${{ runner.temp }}'
+          args: |
+            -c "
+            echo '--- Starting bytebase-action script ---'
+            echo 'Runner temp directory (inside container context): ${{ runner.temp }}'
+            echo 'Target output file path: ${{ env.BYTEBASE_OUTPUT_FILE_PATH }}'
+            
+            # Ensure the target directory for the output file exists
+            # dirname needs the path, so quote it properly
+            TARGET_DIR=$(dirname \"${{ env.BYTEBASE_OUTPUT_FILE_PATH }}\")
+            echo \"Ensuring output directory exists: $TARGET_DIR\"
+            mkdir -p \"$TARGET_DIR\"
+            
+            echo 'Executing: bytebase-action rollout ...'
+            # Execute the bytebase-action command
+            # Ensure arguments with environment variables are properly quoted if they might contain spaces
+            # or special characters, though for these specific env vars, it might not be strictly needed.
+            bytebase-action rollout \
+              --url='${{ env.BYTEBASE_URL }}' \
+              --service-account='${{ env.BYTEBASE_SERVICE_ACCOUNT }}' \
+              --service-account-secret='${{ env.BYTEBASE_SERVICE_ACCOUNT_SECRET }}' \
+              --project='${{ env.BYTEBASE_PROJECT }}' \
+              --file-pattern='${{ env.FILE_PATTERN }}' \
+              --targets='${{ env.BYTEBASE_TARGETS }}' \
+              --target-stage='${{ env.BYTEBASE_TARGET_STAGE }}' \
+              --output='${{ env.BYTEBASE_OUTPUT_FILE_PATH }}'
+            
+            ACTION_EXIT_CODE=$?
+            echo \"bytebase-action rollout command finished with exit code: $ACTION_EXIT_CODE\"
+            
+            # Check if the action succeeded and if the file was created
+            if [ $ACTION_EXIT_CODE -eq 0 ]; then
+              echo 'Action succeeded. Checking for output file existence inside container script:'
+              if [ -f \"${{ env.BYTEBASE_OUTPUT_FILE_PATH }}\" ]; then
+                echo 'Output file FOUND by script:'
+                ls -l \"${{ env.BYTEBASE_OUTPUT_FILE_PATH }}\"
+                echo '--- Content of output file (from inside action script) ---'
+                cat \"${{ env.BYTEBASE_OUTPUT_FILE_PATH }}\"
+                echo '--- End of content ---'
+              else
+                echo 'Output file NOT FOUND by script at ${{ env.BYTEBASE_OUTPUT_FILE_PATH }}.'
+                echo 'Listing directory contents of $TARGET_DIR:'
+                ls -la \"$TARGET_DIR\"
+              fi
+            else
+              echo 'bytebase-action command failed (exit code $ACTION_EXIT_CODE), skipping output file check by script.'
+            fi
+            echo '--- Ending bytebase-action script ---'
+            # Propagate the exit code of the bytebase-action command
+            exit $ACTION_EXIT_CODE
+            "
       - name: Check output
+        # This step will run by default only if the 'rollout' step succeeds.
+        # If you want it to run even if 'rollout' fails (e.g., for debugging), add: if: always()
         run: |
+          echo "--- Check output step on runner ---"
+          echo "Runner temp directory (on runner): ${{ runner.temp }}"
+          echo "Expected output file (on runner): ${{ runner.temp }}/bytebase-metadata.json"
+          echo "Listing contents of ${{ runner.temp }} on runner:"
           ls -al ${{ runner.temp }}
-          echo "Output: ${{ runner.temp }}/bytebase-metadata.json"
-          cat ${{ runner.temp }}/bytebase-metadata.json
+          echo "Attempting to cat the file from runner:"
+          # Use the same env var name for consistency, or the direct path
+          cat ${{ env.BYTEBASE_OUTPUT_FILE_PATH }} # This env var was set in the previous step,
+                                                    # but it's better to use the known path directly if env var scope is an issue.
+                                                    # Using the explicit path:
+                                                    # cat ${{ runner.temp }}/bytebase-metadata.json
