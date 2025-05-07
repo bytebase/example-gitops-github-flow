@@ -18,14 +18,14 @@ jobs:
           echo "Build done!"
           echo "Uploading..."
           echo "Upload done!"
-  deploy-to-all:
+  deploy-to-test:
     needs: build
     runs-on: ubuntu-latest # use self-hosted machines if your Bytebase runs in internal networks.
+    environment: test
     container:
       image: docker://bytebase/bytebase-action:latest
     outputs:
-      bytebase-plan: ${{ steps.create-plan.outputs.plan }}
-      deployment-required: ${{ steps.create-plan.outputs.deployment-required }}
+      bytebase-plan: ${{ steps.set-output.outputs.plan }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -42,9 +42,22 @@ jobs:
           BYTEBASE_OUTPUT: ${{ runner.temp }}/bytebase-metadata.json
         run: |
           bytebase-action rollout --url=${{ env.BYTEBASE_URL }} --service-account=${{ env.BYTEBASE_SERVICE_ACCOUNT }} --service-account-secret=${{ env.BYTEBASE_SERVICE_ACCOUNT_SECRET }} --project=${{ env.BYTEBASE_PROJECT }} --file-pattern=${{ env.FILE_PATTERN }} --targets=${{ env.BYTEBASE_TARGETS }} --target-stage=${{ env.BYTEBASE_TARGET_STAGE }} --output=${{ env.BYTEBASE_OUTPUT }}
-          ls -al ${{ runner.temp }}
-      - name: Check output
+      - name: Set output
+        id: set-output
         run: |
-          ls -al ${{ runner.temp }}
-          echo "Output: ${{ runner.temp }}/bytebase-metadata.json"
-          cat ${{ runner.temp }}/bytebase-metadata.json
+          PLAN=$(jq -r .plan ${{ runner.temp }}/bytebase-metadata.json)
+          echo "plan=$PLAN" >> $GITHUB_OUTPUT
+  deploy-to-prod:
+    needs: deploy-to-test
+    runs-on: ubuntu-latest
+    environment: prod
+    container:
+      image: docker://bytebase/bytebase-action:latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: rollout
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo ${{ needs.deploy-to-test.outputs.bytebase-plan }}
