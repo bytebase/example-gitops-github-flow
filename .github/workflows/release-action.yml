@@ -27,9 +27,6 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-      - name: ls
-        run: |
-          ls -al migrations
       - name: rollout
         uses: docker://bytebase/bytebase-action:latest
         env:
@@ -43,9 +40,10 @@ jobs:
           FILE_PATTERN: "migrations/*.sql"
           BYTEBASE_OUTPUT: ${{ runner.temp }}/bytebase-metadata.json
         with:
-          entrypoint: bytebase-action
-          args: rollout --url=${{ env.BYTEBASE_URL }} --service-account=${{ env.BYTEBASE_SERVICE_ACCOUNT }} --service-account-secret=${{ env.BYTEBASE_SERVICE_ACCOUNT_SECRET }} --project=${{ env.BYTEBASE_PROJECT }} --file-pattern=${{ env.FILE_PATTERN }} --targets=${{ env.BYTEBASE_TARGETS }} --target-stage=${{ env.BYTEBASE_TARGET_STAGE }} --output=${{ env.BYTEBASE_OUTPUT }}
+          entrypoint: /bin/sh
+          args: bytebase-action rollout --url=${{ env.BYTEBASE_URL }} --service-account=${{ env.BYTEBASE_SERVICE_ACCOUNT }} --service-account-secret=${{ env.BYTEBASE_SERVICE_ACCOUNT_SECRET }} --project=${{ env.BYTEBASE_PROJECT }} --file-pattern=${{ env.FILE_PATTERN }} --targets=${{ env.BYTEBASE_TARGETS }} --target-stage=${{ env.BYTEBASE_TARGET_STAGE }} --output=${{ env.BYTEBASE_OUTPUT }}
       - name: Check output
         run: |
+          ls -al ${{ runner.temp }}
           echo "Output: ${{ runner.temp }}/bytebase-metadata.json"
           cat ${{ runner.temp }}/bytebase-metadata.json
