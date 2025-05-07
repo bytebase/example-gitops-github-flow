@@ -27,6 +27,9 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+      - name: ls
+        run: |
+          ls -al migrations
       - name: rollout
         uses: docker://bytebase/bytebase-action:latest
         env:
