@@ -47,6 +47,10 @@ jobs:
         run: |
           PLAN=$(jq -r .plan ${{ runner.temp }}/bytebase-metadata.json)
           echo "plan=$PLAN" >> $GITHUB_OUTPUT
+      - name: Deploy app
+        run: |
+          echo "Deploying app to test environment..."
+          echo "Deploy app to test environment done!"
   deploy-to-prod:
     needs: deploy-to-test
     runs-on: ubuntu-latest
@@ -66,3 +70,7 @@ jobs:
           BYTEBASE_TARGET_STAGE: environments/prod
         run: |
           bytebase-action rollout --url=${{ env.BYTEBASE_URL }} --service-account=${{ env.BYTEBASE_SERVICE_ACCOUNT }} --service-account-secret=${{ env.BYTEBASE_SERVICE_ACCOUNT_SECRET }} --project=${{ env.BYTEBASE_PROJECT }} --target-stage=${{ env.BYTEBASE_TARGET_STAGE }}  --plan=${{ needs.deploy-to-test.outputs.bytebase-plan }}
+      - name: Deploy app
+        run: |
+          echo "Deploying app to prod environment..."
+          echo "Deploy app to prod environment done!"
