@@ -59,5 +59,10 @@ jobs:
       - name: rollout
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          BYTEBASE_URL: https://demo.bytebase.com
+          BYTEBASE_SERVICE_ACCOUNT: ci@service.bytebase.com
+          BYTEBASE_SERVICE_ACCOUNT_SECRET: ${{secrets.BYTEBASE_SERVICE_ACCOUNT_SECRET}}
+          BYTEBASE_PROJECT: "projects/project-sample"
+          BYTEBASE_TARGET_STAGE: environments/prod
         run: |
-          echo ${{ needs.deploy-to-test.outputs.bytebase-plan }}
+          bytebase-action rollout --url=${{ env.BYTEBASE_URL }} --service-account=${{ env.BYTEBASE_SERVICE_ACCOUNT }} --service-account-secret=${{ env.BYTEBASE_SERVICE_ACCOUNT_SECRET }} --project=${{ env.BYTEBASE_PROJECT }} --target-stage=${{ env.BYTEBASE_TARGET_STAGE }}  --plan=${{ needs.deploy-to-test.outputs.bytebase-plan }}
