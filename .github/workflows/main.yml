@@ -1,0 +1,25 @@
+# .github/workflows/sql-review.yml
+name: SQL Review
+
+on:
+  pull_request:
+    paths:
+      - 'dev/*.sql'
+      - 'prod/*.sql'
+
+jobs:
+  review-sql:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Check SQL for DROP statements
+        run: |
+          echo "🔍 Checking SQL files..."
+          if grep -i 'drop' $(find dev/ prod/ -name '*.sql'); then
+            echo "🚫 DROP statement found!"
+            exit 1
+          else
+            echo "✅ No DROP statement found."
+          fi
