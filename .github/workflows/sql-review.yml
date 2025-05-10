@@ -14,10 +14,10 @@ jobs:
     runs-on: ubuntu-latest # use self-hosted machines if your Bytebase runs in internal networks.
     env:
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # set GITHUB_TOKEN because the 'Check release' step needs it to comment the pull request with check results.
-      BYTEBASE_URL: https://demo.bytebase.com
-      BYTEBASE_SERVICE_ACCOUNT: ci@service.bytebase.com
+      BYTEBASE_URL: https://3afb-113-190-242-52.ngrok-free.app
+      BYTEBASE_SERVICE_ACCOUNT: api-example@service.bytebase.com
       BYTEBASE_PROJECT: "projects/project-sample"
-      BYTEBASE_TARGETS: "instances/test-sample-instance/databases/hr_test"
+      BYTEBASE_TARGETS: "instances/test-sample-instance/databases/hr_test,instances/prod-sample-instance/databases/hr_prod"
       FILE_PATTERN: "migrations/*.sql"
     steps:
       - name: Checkout
