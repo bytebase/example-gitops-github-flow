@@ -32,7 +32,7 @@ Modify the environment variables to match your setup.
 Set your service account password in the repository secrets setting with the name `BYTEBASE_SERVICE_ACCOUNT_SECRET`.
 
 > [!IMPORTANT]
-> The migration filename SHOULD comply to the naming scheme described in [bytebase/create-release-action](https://github.com/bytebase/create-release-action/tree/main).
+> The migration filename SHOULD comply to the naming scheme described in [bytebase-action](https://github.com/bytebase/bytebase/tree/main/action#global-flags) `--file-pattern` flag section.
 
 ### How to configure release-action.yml
 
@@ -60,7 +60,7 @@ In the repository environments setting, create two environments: "test" and "pro
 Set your service account password in the repository secrets setting with the name `BYTEBASE_SERVICE_ACCOUNT_SECRET`.
 
 > [!IMPORTANT]
-> The migration filename SHOULD comply to the naming scheme described in [bytebase/create-release-action](https://github.com/bytebase/create-release-action/tree/main).
+> The migration filename SHOULD comply to the naming scheme described in [bytebase-action](https://github.com/bytebase/bytebase/tree/main/action#global-flags) `--file-pattern` flag section.
 
 ## Use javascript actions 
 
@@ -83,7 +83,7 @@ Modify the environment variables to match your setup.
 Set your service account password in the repository secrets setting with the name `BYTEBASE_SERVICE_ACCOUNT_SECRET`.
 
 > [!IMPORTANT]
-> The migration filename SHOULD comply to the naming scheme described in [bytebase/create-release-action](https://github.com/bytebase/create-release-action/tree/main).
+> The migration filename SHOULD comply to the naming scheme described in [bytebase-action](https://github.com/bytebase/bytebase/tree/main/action#global-flags) `--file-pattern` flag section.
 
 ### How to configure release.yml
 
@@ -107,4 +107,4 @@ In the repository environments setting, create two environments: "test" and "pro
 Set your service account password in the repository secrets setting with the name `BYTEBASE_SERVICE_ACCOUNT_SECRET`.
 
 > [!IMPORTANT]
-> The migration filename SHOULD comply to the naming scheme described in [bytebase/create-release-action](https://github.com/bytebase/create-release-action/tree/main).
+> The migration filename SHOULD comply to the naming scheme described in [bytebase-action](https://github.com/bytebase/bytebase/tree/main/action#global-flags) `--file-pattern` flag section.
