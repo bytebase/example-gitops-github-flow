@@ -32,7 +32,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           BYTEBASE_URL: https://demo.bytebase.com
-          BYTEBASE_SERVICE_ACCOUNT: ci@service.bytebase.com
+          BYTEBASE_SERVICE_ACCOUNT: api@service.bytebase.com
           BYTEBASE_SERVICE_ACCOUNT_SECRET: ${{secrets.BYTEBASE_SERVICE_ACCOUNT_SECRET}}
           BYTEBASE_PROJECT: "projects/project-sample"
           BYTEBASE_TARGETS: "instances/test-sample-instance/databases/hr_test,instances/prod-sample-instance/databases/hr_prod"
@@ -63,7 +63,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           BYTEBASE_URL: https://demo.bytebase.com
-          BYTEBASE_SERVICE_ACCOUNT: ci@service.bytebase.com
+          BYTEBASE_SERVICE_ACCOUNT: api@service.bytebase.com
           BYTEBASE_SERVICE_ACCOUNT_SECRET: ${{secrets.BYTEBASE_SERVICE_ACCOUNT_SECRET}}
           BYTEBASE_PROJECT: "projects/project-sample"
           BYTEBASE_TARGET_STAGE: environments/prod
