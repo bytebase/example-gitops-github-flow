@@ -23,7 +23,7 @@ jobs:
           echo "Build done!"
           echo "Uploading..."
           echo "Upload done!"
-  create-rollout-on-bytebase:
+  create-rollout:
     needs: build
     runs-on: ubuntu-latest # use self-hosted machines if your Bytebase runs in internal networks.
     container:
@@ -46,7 +46,7 @@ jobs:
           PLAN=$(jq -r .plan ${{ runner.temp }}/bytebase-metadata.json)
           echo "plan=$PLAN" >> $GITHUB_OUTPUT
   deploy-to-test:
-    needs: create-rollout-on-bytebase
+    needs: create-rollout
     runs-on: ubuntu-latest # use self-hosted machines if your Bytebase runs in internal networks.
     environment: test
     container:
@@ -58,7 +58,7 @@ jobs:
         env:
           BYTEBASE_TARGET_STAGE: environments/test
         run: |
-          bytebase-action rollout --url=${{ env.BYTEBASE_URL }} --service-account=${{ env.BYTEBASE_SERVICE_ACCOUNT }} --service-account-secret=${{ env.BYTEBASE_SERVICE_ACCOUNT_SECRET }} --project=${{ env.BYTEBASE_PROJECT }} --target-stage=${{ env.BYTEBASE_TARGET_STAGE }}  --plan=${{ needs.create-rollout-on-bytebase.outputs.bytebase-plan }}
+          bytebase-action rollout --url=${{ env.BYTEBASE_URL }} --service-account=${{ env.BYTEBASE_SERVICE_ACCOUNT }} --service-account-secret=${{ env.BYTEBASE_SERVICE_ACCOUNT_SECRET }} --project=${{ env.BYTEBASE_PROJECT }} --target-stage=${{ env.BYTEBASE_TARGET_STAGE }}  --plan=${{ needs.create-rollout.outputs.bytebase-plan }}
       - name: Deploy app
         run: |
           echo "Deploying app to test environment..."
@@ -66,7 +66,7 @@ jobs:
   deploy-to-prod:
     needs: 
       - deploy-to-test
-      - create-rollout-on-bytebase
+      - create-rollout
     runs-on: ubuntu-latest
     environment: prod
     container:
@@ -78,7 +78,7 @@ jobs:
         env:
           BYTEBASE_TARGET_STAGE: environments/prod
         run: |
-          bytebase-action rollout --url=${{ env.BYTEBASE_URL }} --service-account=${{ env.BYTEBASE_SERVICE_ACCOUNT }} --service-account-secret=${{ env.BYTEBASE_SERVICE_ACCOUNT_SECRET }} --project=${{ env.BYTEBASE_PROJECT }} --target-stage=${{ env.BYTEBASE_TARGET_STAGE }}  --plan=${{ needs.create-rollout-on-bytebase.outputs.bytebase-plan }}
+          bytebase-action rollout --url=${{ env.BYTEBASE_URL }} --service-account=${{ env.BYTEBASE_SERVICE_ACCOUNT }} --service-account-secret=${{ env.BYTEBASE_SERVICE_ACCOUNT_SECRET }} --project=${{ env.BYTEBASE_PROJECT }} --target-stage=${{ env.BYTEBASE_TARGET_STAGE }}  --plan=${{ needs.create-rollout.outputs.bytebase-plan }}
       - name: Deploy app
         run: |
           echo "Deploying app to prod environment..."
