@@ -1,5 +1,5 @@
 INSERT INTO users (
     id, name, email
 ) VALUES (
-    1, 'me', 'me@me.com'
+    2, 'me2', 'me2@me.com'
 );
