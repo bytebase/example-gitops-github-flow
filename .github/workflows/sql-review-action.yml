@@ -22,9 +22,8 @@ jobs:
             GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # set GITHUB_TOKEN because the 'Check release' step needs it to comment the pull request with check results.
             BYTEBASE_URL: https://demo.bytebase.com
             BYTEBASE_SERVICE_ACCOUNT: api@service.bytebase.com
-            BYTEBASE_SERVICE_ACCOUNT_SECRET: ${{ secrets.BYTEBASE_SERVICE_ACCOUNT_SECRET }}
             BYTEBASE_PROJECT: "projects/hr"
             BYTEBASE_TARGETS: "instances/prod-sample-instance/databases/hr_prod"
             FILE_PATTERN: "migrations-semver/*.sql"
         run: |
-          bytebase-action check --url=${{ env.BYTEBASE_URL }} --service-account=${{ env.BYTEBASE_SERVICE_ACCOUNT }} --service-account-secret=${{ env.BYTEBASE_SERVICE_ACCOUNT_SECRET }} --project=${{ env.BYTEBASE_PROJECT }} --targets=${{ env.BYTEBASE_TARGETS }} --file-pattern=${{ env.FILE_PATTERN }}
+          bytebase-action check --url=${{ env.BYTEBASE_URL }} --service-account=${{ env.BYTEBASE_SERVICE_ACCOUNT }} --service-account-secret=${{ secrets.BYTEBASE_SERVICE_ACCOUNT_SECRET }} --project=${{ env.BYTEBASE_PROJECT }} --targets=${{ env.BYTEBASE_TARGETS }} --file-pattern=${{ env.FILE_PATTERN }}
