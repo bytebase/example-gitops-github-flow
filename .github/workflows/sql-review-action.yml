@@ -1,6 +1,7 @@
 name: SQL review on pull request using bytebase-action image
 
 on:
+  push:
   pull_request:
     branches:
       - main
