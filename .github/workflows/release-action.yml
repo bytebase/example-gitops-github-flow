@@ -35,7 +35,7 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-      - name: rollout
+      - name: Roll out database change
         env:
           BYTEBASE_TARGETS: "instances/test-sample-instance/databases/hr_test,instances/prod-sample-instance/databases/hr_prod"
           FILE_PATTERN: "migrations-semver/*.sql"
