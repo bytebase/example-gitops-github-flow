@@ -11,6 +11,7 @@ jobs:
   check-release-on-prod:
     permissions:
         pull-requests: write # write permission required to allow the action writes the check results to the comment.
+        contents: read # read permission required to allow the action to read the repository’s files.
     runs-on: ubuntu-latest # use self-hosted machines if your Bytebase runs in internal networks.
     container:
       image: docker://bytebase/bytebase-action:latest
