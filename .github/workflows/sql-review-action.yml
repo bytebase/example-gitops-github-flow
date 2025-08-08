@@ -23,7 +23,7 @@ jobs:
             BYTEBASE_URL: https://valid-just-tadpole.ngrok-free.app
             BYTEBASE_SERVICE_ACCOUNT: api@service.bytebase.com
             BYTEBASE_SERVICE_ACCOUNT_SECRET: ${{ secrets.BYTEBASE_SERVICE_ACCOUNT_SECRET }}
-            BYTEBASE_PROJECT: "projects/hr"
+            BYTEBASE_PROJECT: "projects/project-sample"
             BYTEBASE_TARGETS: "instances/prod-sample-instance/databases/hr_prod"
             FILE_PATTERN: "migrations/*.sql"
         run: |
