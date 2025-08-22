@@ -1,0 +1,93 @@
+name: Declarative rollout using bytebase-action image
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "schema/*.sql"
+
+# cancel previous workflow run if a new workflow run is triggered
+# to prevent multiple rollout
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: true
+
+env:
+  BYTEBASE_URL: https://demo.bytebase.com
+  BYTEBASE_SERVICE_ACCOUNT: api@service.bytebase.com
+  BYTEBASE_SERVICE_ACCOUNT_SECRET: ${{ secrets.BYTEBASE_SERVICE_ACCOUNT_SECRET }}
+  BYTEBASE_PROJECT: "projects/hr"
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Build app and upload
+        run: |
+          echo "Building..."
+          echo "Build done!"
+          echo "Uploading..."
+          echo "Upload done!"
+  create-rollout:
+    needs: build
+    runs-on: ubuntu-latest # use self-hosted machines if your Bytebase runs in internal networks.
+    container:
+      image: bytebase/bytebase-action:latest
+    outputs:
+      bytebase-plan: ${{ steps.set-output.outputs.plan }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Roll out database change
+        env:
+          BYTEBASE_TARGETS: "instances/test-sample-instance/databases/hr_test,instances/prod-sample-instance/databases/hr_prod"
+          FILE_PATTERN: "schema/*.sql"
+          BYTEBASE_OUTPUT: ${{ runner.temp }}/bytebase-metadata.json
+        run: |
+          bytebase-action rollout --url=${{ env.BYTEBASE_URL }} --service-account=${{ env.BYTEBASE_SERVICE_ACCOUNT }} --service-account-secret=${{ env.BYTEBASE_SERVICE_ACCOUNT_SECRET }} --project=${{ env.BYTEBASE_PROJECT }} --file-pattern=${{ env.FILE_PATTERN }} --targets=${{ env.BYTEBASE_TARGETS }} --declarative --output=${{ env.BYTEBASE_OUTPUT }}
+      - name: Set output
+        id: set-output
+        run: |
+          PLAN=$(jq -r .plan ${{ runner.temp }}/bytebase-metadata.json)
+          echo "plan=$PLAN" >> $GITHUB_OUTPUT
+  deploy-to-test:
+    needs: create-rollout
+    runs-on: ubuntu-latest # use self-hosted machines if your Bytebase runs in internal networks.
+    environment: test
+    container:
+      image: bytebase/bytebase-action:latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Roll out database change
+        env:
+          BYTEBASE_TARGET_STAGE: environments/test
+        run: |
+          bytebase-action rollout --url=${{ env.BYTEBASE_URL }} --service-account=${{ env.BYTEBASE_SERVICE_ACCOUNT }} --service-account-secret=${{ env.BYTEBASE_SERVICE_ACCOUNT_SECRET }} --project=${{ env.BYTEBASE_PROJECT }} --target-stage=${{ env.BYTEBASE_TARGET_STAGE }}  --plan=${{ needs.create-rollout.outputs.bytebase-plan }}
+      - name: Deploy app
+        run: |
+          echo "Deploying app to test environment..."
+          echo "Deploy app to test environment done!"
+  deploy-to-prod:
+    needs: 
+      - deploy-to-test
+      - create-rollout
+    runs-on: ubuntu-latest
+    environment: prod
+    container:
+      image: bytebase/bytebase-action:latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: rollout
+        env:
+          BYTEBASE_TARGET_STAGE: environments/prod
+        run: |
+          bytebase-action rollout --url=${{ env.BYTEBASE_URL }} --service-account=${{ env.BYTEBASE_SERVICE_ACCOUNT }} --service-account-secret=${{ env.BYTEBASE_SERVICE_ACCOUNT_SECRET }} --project=${{ env.BYTEBASE_PROJECT }} --target-stage=${{ env.BYTEBASE_TARGET_STAGE }}  --plan=${{ needs.create-rollout.outputs.bytebase-plan }}
+      - name: Deploy app
+        run: |
+          echo "Deploying app to prod environment..."
+          echo "Deploy app to prod environment done!"
