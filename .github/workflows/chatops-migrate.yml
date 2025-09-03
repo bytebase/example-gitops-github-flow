@@ -1,0 +1,171 @@
+name: ChatOps Migration Deployment
+
+on:
+  issue_comment:
+    types: [created]
+
+env:
+  BYTEBASE_URL: https://demo.bytebase.com
+  BYTEBASE_SERVICE_ACCOUNT: api@service.bytebase.com
+  BYTEBASE_SERVICE_ACCOUNT_SECRET: ${{ secrets.BYTEBASE_SERVICE_ACCOUNT_SECRET }}
+  BYTEBASE_PROJECT: "projects/hr"
+
+jobs:
+  parse-command:
+    if: github.event.issue.pull_request && startsWith(github.event.comment.body, '/migrate')
+    runs-on: ubuntu-latest
+    outputs:
+      environment: ${{ steps.parse.outputs.environment }}
+      valid-command: ${{ steps.parse.outputs.valid-command }}
+    steps:
+      - name: Parse migrate command
+        id: parse
+        run: |
+          COMMENT="${{ github.event.comment.body }}"
+          echo "Comment: $COMMENT"
+
+          # Extract environment from "/migrate <environment>"
+          if [[ $COMMENT =~ ^/migrate[[:space:]]+([a-zA-Z]+) ]]; then
+            ENVIRONMENT="${BASH_REMATCH[1]}"
+            echo "Parsed environment: $ENVIRONMENT"
+            
+            # Validate environment
+            case $ENVIRONMENT in
+              test|prod)
+                echo "environment=$ENVIRONMENT" >> $GITHUB_OUTPUT
+                echo "valid-command=true" >> $GITHUB_OUTPUT
+                echo "✅ Valid environment: $ENVIRONMENT"
+                ;;
+              *)
+                echo "valid-command=false" >> $GITHUB_OUTPUT
+                echo "❌ Invalid environment: $ENVIRONMENT"
+                ;;
+            esac
+          else
+            echo "valid-command=false" >> $GITHUB_OUTPUT
+            echo "❌ Invalid command format"
+          fi
+
+      - name: Add reaction to comment
+        if: steps.parse.outputs.valid-command == 'true'
+        uses: peter-evans/create-or-update-comment@v3
+        with:
+          comment-id: ${{ github.event.comment.id }}
+          reactions: rocket
+
+      - name: Comment on invalid command
+        if: steps.parse.outputs.valid-command == 'false'
+        uses: peter-evans/create-or-update-comment@v3
+        with:
+          issue-number: ${{ github.event.issue.number }}
+          body: |
+            ❌ Invalid migrate command. 
+
+            **Usage:** `/migrate <environment>`  
+            **Valid environments:** `test`, `prod`
+
+            **Example:** `/migrate test`
+          reactions: confused
+
+  deploy:
+    needs: parse-command
+    if: needs.parse-command.outputs.valid-command == 'true'
+    runs-on: ubuntu-latest
+    environment: ${{ needs.parse-command.outputs.environment }}
+    container:
+      image: bytebase/bytebase-action:latest
+    steps:
+      - name: Checkout PR merge commit
+        uses: actions/checkout@v4
+        with:
+          ref: refs/pull/${{ github.event.issue.number }}/merge
+
+      - name: Comment deployment started
+        uses: peter-evans/create-or-update-comment@v3
+        with:
+          issue-number: ${{ github.event.issue.number }}
+          body: |
+            🚀 **Migration deployment started**
+
+            **Environment:** `${{ needs.parse-command.outputs.environment }}`  
+            **PR:** #${{ github.event.issue.number }}
+            **Triggered by:** @${{ github.event.comment.user.login }}
+
+            Deploying database changes...
+
+      - name: Set environment-specific targets
+        id: env-config
+        run: |
+          case "${{ needs.parse-command.outputs.environment }}" in
+            test)
+              echo "bytebase-targets=instances/test-sample-instance/databases/hr_test" >> $GITHUB_OUTPUT
+              echo "bytebase-stage=environments/test" >> $GITHUB_OUTPUT
+              ;;
+            prod)
+              echo "bytebase-targets=instances/prod-sample-instance/databases/hr_prod" >> $GITHUB_OUTPUT
+              echo "bytebase-stage=environments/prod" >> $GITHUB_OUTPUT
+              ;;
+          esac
+
+      - name: Create rollout plan
+        id: create-rollout
+        env:
+          BYTEBASE_TARGETS: ${{ steps.env-config.outputs.bytebase-targets }}
+          FILE_PATTERN: "migrations-semver/*.sql"
+          BYTEBASE_OUTPUT: ${{ runner.temp }}/bytebase-metadata.json
+        run: |
+          echo "Creating rollout plan for ${{ needs.parse-command.outputs.environment }}..."
+
+          bytebase-action rollout \
+            --url=${{ env.BYTEBASE_URL }} \
+            --service-account=${{ env.BYTEBASE_SERVICE_ACCOUNT }} \
+            --service-account-secret=${{ env.BYTEBASE_SERVICE_ACCOUNT_SECRET }} \
+            --project=${{ env.BYTEBASE_PROJECT }} \
+            --file-pattern=${{ env.FILE_PATTERN }} \
+            --targets=${{ env.BYTEBASE_TARGETS }} \
+            --output=${{ env.BYTEBASE_OUTPUT }}
+
+          PLAN=$(jq -r .plan ${{ runner.temp }}/bytebase-metadata.json)
+          echo "plan=$PLAN" >> $GITHUB_OUTPUT
+
+      - name: Execute rollout
+        env:
+          BYTEBASE_TARGET_STAGE: ${{ steps.env-config.outputs.bytebase-stage }}
+        run: |
+          echo "Executing rollout to ${{ needs.parse-command.outputs.environment }}..."
+
+          bytebase-action rollout \
+            --url=${{ env.BYTEBASE_URL }} \
+            --service-account=${{ env.BYTEBASE_SERVICE_ACCOUNT }} \
+            --service-account-secret=${{ env.BYTEBASE_SERVICE_ACCOUNT_SECRET }} \
+            --project=${{ env.BYTEBASE_PROJECT }} \
+            --target-stage=${{ env.BYTEBASE_TARGET_STAGE }} \
+            --plan=${{ steps.create-rollout.outputs.plan }}
+
+      - name: Comment deployment success
+        if: success()
+        uses: peter-evans/create-or-update-comment@v3
+        with:
+          issue-number: ${{ github.event.issue.number }}
+          body: |
+            ✅ **Migration deployment completed successfully**
+
+            **Environment:** `${{ needs.parse-command.outputs.environment }}`  
+            **PR:** #${{ github.event.issue.number }}
+            **Triggered by:** @${{ github.event.comment.user.login }}
+
+            Database schema has been updated in the `${{ needs.parse-command.outputs.environment }}` environment.
+
+      - name: Comment deployment failure
+        if: failure()
+        uses: peter-evans/create-or-update-comment@v3
+        with:
+          issue-number: ${{ github.event.issue.number }}
+          body: |
+            ❌ **Migration deployment failed**
+
+            **Environment:** `${{ needs.parse-command.outputs.environment }}`  
+            **PR:** #${{ github.event.issue.number }}
+            **Triggered by:** @${{ github.event.comment.user.login }}
+
+            Please check the [workflow run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}) for details.
