@@ -63,3 +63,54 @@ Set your service account password in the repository secrets setting with the nam
 
 > [!IMPORTANT]
 > The migration filename SHOULD comply to the naming scheme described in [bytebase-action](https://github.com/bytebase/bytebase/tree/main/action#global-flags) `--file-pattern` flag section.
+
+### How to configure chatops-migrate.yml
+
+Copy [chatops-migrate.yml](/.github/workflows/chatops-migrate.yml) to your repository.
+
+This workflow enables ChatOps-style deployments through PR comments. Team members can trigger migrations by commenting `/migrate <environment>` on pull requests.
+
+#### Configuration
+
+1. **Define environments in the workflow**: Edit the `config.yaml` generation step to define your environments and their database targets.
+
+> [!NOTE]
+> The top-level keys (e.g., `test`, `prod`) are used as GitHub Actions job environments, so they must match the environment names configured in your repository settings.
+
+
+```yml
+      - name: Write command config
+        run: |
+          cat <<EOF > ${{ runner.temp }}/config.yaml
+          test:
+            stage: environments/test
+            targets:
+              - instances/test-sample-instance/databases/hr_test
+          prod:
+            stage: environments/prod
+            targets:
+              - instances/prod-sample-instance/databases/hr_prod
+          EOF
+```
+
+- `stage`: The environment of the databases (e.g., `environments/test`)
+- `targets`: List of databases (e.g., `instances/test-sample-instance/databases/hr_test`)
+
+2. **Set environment variables**: Configure these variables in the workflow:
+
+```yml
+env:
+  BYTEBASE_URL: https://demo.bytebase.com
+  BYTEBASE_SERVICE_ACCOUNT: api@service.bytebase.com
+  BYTEBASE_SERVICE_ACCOUNT_SECRET: ${{ secrets.BYTEBASE_SERVICE_ACCOUNT_SECRET }}
+  BYTEBASE_PROJECT: "projects/hr"
+```
+
+3. **Configure GitHub environments**: Create environments matching your config (e.g., "test", "prod") in repository settings. Add deployment protection rules for production environments.
+
+4. **Add service account secret**: Set `BYTEBASE_SERVICE_ACCOUNT_SECRET` in repository secrets.
+
+#### Usage
+
+- Comment `/migrate <environment>` on a PR to trigger deployment to that environment
+- Example: `/migrate prod` deploys to production (requires environment approval if configured)
