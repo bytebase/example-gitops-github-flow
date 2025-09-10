@@ -104,6 +104,7 @@ env:
   BYTEBASE_SERVICE_ACCOUNT: api@service.bytebase.com
   BYTEBASE_SERVICE_ACCOUNT_SECRET: ${{ secrets.BYTEBASE_SERVICE_ACCOUNT_SECRET }}
   BYTEBASE_PROJECT: "projects/hr"
+  FILE_PATTERN: "migrations-semver/*.sql"
 ```
 
 3. **Configure GitHub environments**: Create environments matching your config (e.g., "test", "prod") in repository settings. Add deployment protection rules for production environments.
