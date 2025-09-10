@@ -109,17 +109,20 @@ jobs:
           ref: refs/pull/${{ github.event.issue.number }}/merge
 
       - name: Comment deployment started
+        id: deployment-comment
         uses: peter-evans/create-or-update-comment@v3
         with:
           issue-number: ${{ github.event.issue.number }}
           body: |
-            🚀 **Migration deployment started**
+            🚀 **Migration deployment starting**
 
             **Environment:** `${{ needs.parse-command.outputs.environment }}`  
             **PR:** #${{ github.event.issue.number }}
             **Triggered by:** @${{ github.event.comment.user.login }}
 
-            Deploying database changes...
+            Creating rollout plan...
+
+            Please check the [workflow run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}) for details.
 
       - name: Create rollout plan
         id: create-rollout
@@ -163,13 +166,13 @@ jobs:
           echo "rollout=$ROLLOUT" >> $GITHUB_OUTPUT
           echo "base-url=$BASE_URL" >> $GITHUB_OUTPUT
 
-      - name: Comment rollout details
-        id: rollout-comment
+      - name: Update comment with rollout details
         uses: peter-evans/create-or-update-comment@v3
         with:
-          issue-number: ${{ github.event.issue.number }}
+          comment-id: ${{ steps.deployment-comment.outputs.comment-id }}
+          edit-mode: replace
           body: |
-            🚀 **Migration deployment starting**
+            🚀 **Migration deployment in progress**
             
             **Environment:** `${{ needs.parse-command.outputs.environment }}`
             **PR:** #${{ github.event.issue.number }}
@@ -181,6 +184,8 @@ jobs:
             - 🚀 **Rollout:** ${{ steps.extract-metadata.outputs.base-url }}/${{ steps.extract-metadata.outputs.rollout }}
             
             Executing database changes...
+
+            Please check the [workflow run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}) for details.
 
       - name: Execute rollout
         env:
@@ -200,7 +205,8 @@ jobs:
         if: success()
         uses: peter-evans/create-or-update-comment@v3
         with:
-          comment-id: ${{ steps.rollout-comment.outputs.comment-id }}
+          comment-id: ${{ steps.deployment-comment.outputs.comment-id }}
+          edit-mode: replace
           body: |
             ✅ **Migration deployment completed successfully**
             
@@ -215,11 +221,14 @@ jobs:
             
             Database schema has been successfully updated.
 
+            Please check the [workflow run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}) for details.
+
       - name: Comment deployment failure
         if: failure()
         uses: peter-evans/create-or-update-comment@v3
         with:
-          comment-id: ${{ steps.rollout-comment.outputs.comment-id }}
+          comment-id: ${{ steps.deployment-comment.outputs.comment-id }}
+          edit-mode: replace
           body: |
             ❌ **Migration deployment failed**
             
