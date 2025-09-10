@@ -17,30 +17,58 @@ jobs:
     outputs:
       environment: ${{ steps.parse.outputs.environment }}
       valid-command: ${{ steps.parse.outputs.valid-command }}
+      stage: ${{ steps.parse.outputs.stage }}
+      targets: ${{ steps.parse.outputs.targets }}
     steps:
+      - name: Write command config
+        # write a config.yaml file to runner temp directory
+        run: |
+          cat <<EOF > ${{ runner.temp }}/config.yaml
+          test:
+            stage: environments/test
+            targets:
+              - instances/test-sample-instance/databases/hr_test
+          prod:
+            stage: environments/prod
+            targets:
+              - instances/prod-sample-instance/databases/hr_prod
+          EOF
       - name: Parse migrate command
         id: parse
         run: |
           COMMENT="${{ github.event.comment.body }}"
           echo "Comment: $COMMENT"
+          
+          CONFIG_FILE="${{ runner.temp }}/config.yaml"
+          
+          # Get list of valid environments from config
+          VALID_ENVS=$(yq eval 'keys | join(", ")' "$CONFIG_FILE")
+          echo "valid-envs=$VALID_ENVS" >> $GITHUB_OUTPUT
 
           # Extract environment from "/migrate <environment>"
           if [[ $COMMENT =~ ^/migrate[[:space:]]+([a-zA-Z]+) ]]; then
             ENVIRONMENT="${BASH_REMATCH[1]}"
             echo "Parsed environment: $ENVIRONMENT"
             
-            # Validate environment
-            case $ENVIRONMENT in
-              test|prod)
-                echo "environment=$ENVIRONMENT" >> $GITHUB_OUTPUT
-                echo "valid-command=true" >> $GITHUB_OUTPUT
-                echo "✅ Valid environment: $ENVIRONMENT"
-                ;;
-              *)
-                echo "valid-command=false" >> $GITHUB_OUTPUT
-                echo "❌ Invalid environment: $ENVIRONMENT"
-                ;;
-            esac
+            # Check if environment exists in config using yq
+            if yq eval "has(\"$ENVIRONMENT\")" "$CONFIG_FILE" | grep -q true; then
+              echo "environment=$ENVIRONMENT" >> $GITHUB_OUTPUT
+              echo "valid-command=true" >> $GITHUB_OUTPUT
+              
+              # Extract stage and targets from config for the environment
+              STAGE=$(yq eval ".$ENVIRONMENT.stage" "$CONFIG_FILE")
+              TARGETS=$(yq eval ".$ENVIRONMENT.targets | join(\",\")" "$CONFIG_FILE")
+              
+              echo "stage=$STAGE" >> $GITHUB_OUTPUT
+              echo "targets=$TARGETS" >> $GITHUB_OUTPUT
+              echo "✅ Valid environment: $ENVIRONMENT"
+              echo "   Stage: $STAGE"
+              echo "   Targets: $TARGETS"
+            else
+              echo "valid-command=false" >> $GITHUB_OUTPUT
+              echo "❌ Invalid environment: $ENVIRONMENT"
+              echo "   Valid environments are: $VALID_ENVS"
+            fi
           else
             echo "valid-command=false" >> $GITHUB_OUTPUT
             echo "❌ Invalid command format"
@@ -62,7 +90,7 @@ jobs:
             ❌ Invalid migrate command. 
 
             **Usage:** `/migrate <environment>`  
-            **Valid environments:** `test`, `prod`
+            **Valid environments:** `${{ steps.parse.outputs.valid-envs }}`
 
             **Example:** `/migrate test`
           reactions: confused
@@ -81,36 +109,25 @@ jobs:
           ref: refs/pull/${{ github.event.issue.number }}/merge
 
       - name: Comment deployment started
+        id: deployment-comment
         uses: peter-evans/create-or-update-comment@v3
         with:
           issue-number: ${{ github.event.issue.number }}
           body: |
-            🚀 **Migration deployment started**
+            🚀 **Migration deployment starting**
 
             **Environment:** `${{ needs.parse-command.outputs.environment }}`  
             **PR:** #${{ github.event.issue.number }}
             **Triggered by:** @${{ github.event.comment.user.login }}
 
-            Deploying database changes...
+            Creating rollout plan...
 
-      - name: Set environment-specific targets
-        id: env-config
-        run: |
-          case "${{ needs.parse-command.outputs.environment }}" in
-            test)
-              echo "bytebase-targets=instances/test-sample-instance/databases/hr_test" >> $GITHUB_OUTPUT
-              echo "bytebase-stage=environments/test" >> $GITHUB_OUTPUT
-              ;;
-            prod)
-              echo "bytebase-targets=instances/prod-sample-instance/databases/hr_prod" >> $GITHUB_OUTPUT
-              echo "bytebase-stage=environments/prod" >> $GITHUB_OUTPUT
-              ;;
-          esac
+            Please check the [workflow run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}) for details.
 
       - name: Create rollout plan
         id: create-rollout
         env:
-          BYTEBASE_TARGETS: ${{ steps.env-config.outputs.bytebase-targets }}
+          BYTEBASE_TARGETS: ${{ needs.parse-command.outputs.targets }}
           FILE_PATTERN: "migrations-semver/*.sql"
           BYTEBASE_OUTPUT: ${{ runner.temp }}/bytebase-metadata.json
         run: |
@@ -128,9 +145,51 @@ jobs:
           PLAN=$(jq -r .plan ${{ runner.temp }}/bytebase-metadata.json)
           echo "plan=$PLAN" >> $GITHUB_OUTPUT
 
+      - name: Extract rollout metadata
+        id: extract-metadata
+        run: |
+          # Read the metadata file
+          METADATA_FILE="${{ runner.temp }}/bytebase-metadata.json"
+          
+          # Extract release, plan, and rollout from metadata
+          RELEASE=$(jq -r .release "$METADATA_FILE")
+          PLAN=$(jq -r .plan "$METADATA_FILE")
+          ROLLOUT=$(jq -r .rollout "$METADATA_FILE")
+          
+          # Trim trailing slash from BYTEBASE_URL if present
+          BASE_URL="${{ env.BYTEBASE_URL }}"
+          BASE_URL="${BASE_URL%/}"
+          
+          # Output for use in comment
+          echo "release=$RELEASE" >> $GITHUB_OUTPUT
+          echo "plan=$PLAN" >> $GITHUB_OUTPUT
+          echo "rollout=$ROLLOUT" >> $GITHUB_OUTPUT
+          echo "base-url=$BASE_URL" >> $GITHUB_OUTPUT
+
+      - name: Update comment with rollout details
+        uses: peter-evans/create-or-update-comment@v3
+        with:
+          comment-id: ${{ steps.deployment-comment.outputs.comment-id }}
+          edit-mode: replace
+          body: |
+            🚀 **Migration deployment in progress**
+            
+            **Environment:** `${{ needs.parse-command.outputs.environment }}`
+            **PR:** #${{ github.event.issue.number }}
+            **Triggered by:** @${{ github.event.comment.user.login }}
+            
+            **Bytebase Resources:**
+            - 📦 **Release:** ${{ steps.extract-metadata.outputs.base-url }}/${{ steps.extract-metadata.outputs.release }}
+            - 📝 **Plan:** ${{ steps.extract-metadata.outputs.base-url }}/${{ steps.extract-metadata.outputs.plan }}
+            - 🚀 **Rollout:** ${{ steps.extract-metadata.outputs.base-url }}/${{ steps.extract-metadata.outputs.rollout }}
+            
+            Executing database changes...
+
+            Please check the [workflow run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}) for details.
+
       - name: Execute rollout
         env:
-          BYTEBASE_TARGET_STAGE: ${{ steps.env-config.outputs.bytebase-stage }}
+          BYTEBASE_TARGET_STAGE: ${{ needs.parse-command.outputs.stage }}
         run: |
           echo "Executing rollout to ${{ needs.parse-command.outputs.environment }}..."
 
@@ -146,26 +205,40 @@ jobs:
         if: success()
         uses: peter-evans/create-or-update-comment@v3
         with:
-          issue-number: ${{ github.event.issue.number }}
+          comment-id: ${{ steps.deployment-comment.outputs.comment-id }}
+          edit-mode: replace
           body: |
             ✅ **Migration deployment completed successfully**
-
-            **Environment:** `${{ needs.parse-command.outputs.environment }}`  
+            
+            **Environment:** `${{ needs.parse-command.outputs.environment }}`
             **PR:** #${{ github.event.issue.number }}
             **Triggered by:** @${{ github.event.comment.user.login }}
+            
+            **Bytebase Resources:**
+            - 📦 **Release:** ${{ steps.extract-metadata.outputs.base-url }}/${{ steps.extract-metadata.outputs.release }}
+            - 📝 **Plan:** ${{ steps.extract-metadata.outputs.base-url }}/${{ steps.extract-metadata.outputs.plan }}
+            - 🚀 **Rollout:** ${{ steps.extract-metadata.outputs.base-url }}/${{ steps.extract-metadata.outputs.rollout }}
+            
+            Database schema has been successfully updated.
 
-            Database schema has been updated in the `${{ needs.parse-command.outputs.environment }}` environment.
+            Please check the [workflow run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}) for details.
 
       - name: Comment deployment failure
         if: failure()
         uses: peter-evans/create-or-update-comment@v3
         with:
-          issue-number: ${{ github.event.issue.number }}
+          comment-id: ${{ steps.deployment-comment.outputs.comment-id }}
+          edit-mode: replace
           body: |
             ❌ **Migration deployment failed**
-
-            **Environment:** `${{ needs.parse-command.outputs.environment }}`  
+            
+            **Environment:** `${{ needs.parse-command.outputs.environment }}`
             **PR:** #${{ github.event.issue.number }}
             **Triggered by:** @${{ github.event.comment.user.login }}
-
+            
+            **Bytebase Resources:**
+            - 📦 **Release:** ${{ steps.extract-metadata.outputs.base-url }}/${{ steps.extract-metadata.outputs.release }}
+            - 📝 **Plan:** ${{ steps.extract-metadata.outputs.base-url }}/${{ steps.extract-metadata.outputs.plan }}
+            - 🚀 **Rollout:** ${{ steps.extract-metadata.outputs.base-url }}/${{ steps.extract-metadata.outputs.rollout }}
+            
             Please check the [workflow run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}) for details.
