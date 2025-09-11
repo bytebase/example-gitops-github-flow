@@ -6,8 +6,8 @@ on:
 
 env:
   BYTEBASE_URL: https://demo.bytebase.com
-  BYTEBASE_SERVICE_ACCOUNT: api@service.bytebase.com
-  BYTEBASE_SERVICE_ACCOUNT_SECRET: ${{ secrets.BYTEBASE_SERVICE_ACCOUNT_SECRET }}
+  BYTEBASE_SERVICE_ACCOUNT: api@service.bytebase.com # set service account via environment variable
+  BYTEBASE_SERVICE_ACCOUNT_SECRET: ${{ secrets.BYTEBASE_SERVICE_ACCOUNT_SECRET }} # set service account secret via environment variable
   BYTEBASE_PROJECT: "projects/hr"
   FILE_PATTERN: "migrations-semver/*.sql"
 
@@ -135,8 +135,6 @@ jobs:
 
           bytebase-action rollout \
             --url=${{ env.BYTEBASE_URL }} \
-            --service-account=${{ env.BYTEBASE_SERVICE_ACCOUNT }} \
-            --service-account-secret=${{ env.BYTEBASE_SERVICE_ACCOUNT_SECRET }} \
             --project=${{ env.BYTEBASE_PROJECT }} \
             --file-pattern=${{ env.FILE_PATTERN }} \
             --targets=${{ env.BYTEBASE_TARGETS }} \
@@ -195,8 +193,6 @@ jobs:
 
           bytebase-action rollout \
             --url=${{ env.BYTEBASE_URL }} \
-            --service-account=${{ env.BYTEBASE_SERVICE_ACCOUNT }} \
-            --service-account-secret=${{ env.BYTEBASE_SERVICE_ACCOUNT_SECRET }} \
             --project=${{ env.BYTEBASE_PROJECT }} \
             --target-stage=${{ env.BYTEBASE_TARGET_STAGE }} \
             --plan=${{ steps.create-rollout.outputs.plan }}
