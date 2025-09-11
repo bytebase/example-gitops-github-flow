@@ -15,8 +15,8 @@ concurrency:
 
 env:
   BYTEBASE_URL: https://demo.bytebase.com
-  BYTEBASE_SERVICE_ACCOUNT: api@service.bytebase.com
-  BYTEBASE_SERVICE_ACCOUNT_SECRET: ${{ secrets.BYTEBASE_SERVICE_ACCOUNT_SECRET }}
+  BYTEBASE_SERVICE_ACCOUNT: api@service.bytebase.com # set service account via environment variable
+  BYTEBASE_SERVICE_ACCOUNT_SECRET: ${{ secrets.BYTEBASE_SERVICE_ACCOUNT_SECRET }} # set service account secret via environment variable
   BYTEBASE_PROJECT: "projects/hr"
 
 jobs:
@@ -47,7 +47,7 @@ jobs:
           FILE_PATTERN: "schema/*.sql"
           BYTEBASE_OUTPUT: ${{ runner.temp }}/bytebase-metadata.json
         run: |
-          bytebase-action rollout --url=${{ env.BYTEBASE_URL }} --service-account=${{ env.BYTEBASE_SERVICE_ACCOUNT }} --service-account-secret=${{ env.BYTEBASE_SERVICE_ACCOUNT_SECRET }} --project=${{ env.BYTEBASE_PROJECT }} --file-pattern=${{ env.FILE_PATTERN }} --targets=${{ env.BYTEBASE_TARGETS }} --declarative --output=${{ env.BYTEBASE_OUTPUT }}
+          bytebase-action rollout --url=${{ env.BYTEBASE_URL }} --project=${{ env.BYTEBASE_PROJECT }} --file-pattern=${{ env.FILE_PATTERN }} --targets=${{ env.BYTEBASE_TARGETS }} --declarative --output=${{ env.BYTEBASE_OUTPUT }}
       - name: Set output
         id: set-output
         run: |
@@ -66,7 +66,7 @@ jobs:
         env:
           BYTEBASE_TARGET_STAGE: environments/test
         run: |
-          bytebase-action rollout --url=${{ env.BYTEBASE_URL }} --service-account=${{ env.BYTEBASE_SERVICE_ACCOUNT }} --service-account-secret=${{ env.BYTEBASE_SERVICE_ACCOUNT_SECRET }} --project=${{ env.BYTEBASE_PROJECT }} --target-stage=${{ env.BYTEBASE_TARGET_STAGE }}  --plan=${{ needs.create-rollout.outputs.bytebase-plan }}
+          bytebase-action rollout --url=${{ env.BYTEBASE_URL }} --project=${{ env.BYTEBASE_PROJECT }} --target-stage=${{ env.BYTEBASE_TARGET_STAGE }}  --plan=${{ needs.create-rollout.outputs.bytebase-plan }}
       - name: Deploy app
         run: |
           echo "Deploying app to test environment..."
@@ -86,7 +86,7 @@ jobs:
         env:
           BYTEBASE_TARGET_STAGE: environments/prod
         run: |
-          bytebase-action rollout --url=${{ env.BYTEBASE_URL }} --service-account=${{ env.BYTEBASE_SERVICE_ACCOUNT }} --service-account-secret=${{ env.BYTEBASE_SERVICE_ACCOUNT_SECRET }} --project=${{ env.BYTEBASE_PROJECT }} --target-stage=${{ env.BYTEBASE_TARGET_STAGE }}  --plan=${{ needs.create-rollout.outputs.bytebase-plan }}
+          bytebase-action rollout --url=${{ env.BYTEBASE_URL }} --project=${{ env.BYTEBASE_PROJECT }} --target-stage=${{ env.BYTEBASE_TARGET_STAGE }}  --plan=${{ needs.create-rollout.outputs.bytebase-plan }}
       - name: Deploy app
         run: |
           echo "Deploying app to prod environment..."
