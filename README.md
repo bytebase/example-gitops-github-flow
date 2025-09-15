@@ -72,7 +72,7 @@ This workflow enables ChatOps-style deployments through PR comments. Team member
 
 #### Configuration
 
-1. **Define environments in the workflow**: Edit the `config.yaml` generation step to define your environments and their database targets.
+1. **Define environments in the workflow**: Edit the `bytebase-action-config.yaml` generation step to define your environments and their database targets.
 
 > [!NOTE]
 > The top-level keys (e.g., `test`, `prod`) are used as GitHub Actions job environments, so they must match the environment names configured in your repository settings.
@@ -81,7 +81,7 @@ This workflow enables ChatOps-style deployments through PR comments. Team member
 ```yml
       - name: Write command config
         run: |
-          cat <<EOF > ${{ runner.temp }}/config.yaml
+          cat <<EOF > ${{ runner.temp }}/bytebase-action-config.yaml
           test:
             stage: environments/test
             targets:

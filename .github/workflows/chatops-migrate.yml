@@ -22,9 +22,9 @@ jobs:
       targets: ${{ steps.parse.outputs.targets }}
     steps:
       - name: Write command config
-        # write a config.yaml file to runner temp directory
+        # write a bytebase-action-config.yaml file to runner temp directory
         run: |
-          cat <<EOF > ${{ runner.temp }}/config.yaml
+          cat <<EOF > ${{ runner.temp }}/bytebase-action-config.yaml
           test:
             stage: environments/test
             targets:
@@ -40,7 +40,7 @@ jobs:
           COMMENT="${{ github.event.comment.body }}"
           echo "Comment: $COMMENT"
           
-          CONFIG_FILE="${{ runner.temp }}/config.yaml"
+          CONFIG_FILE="${{ runner.temp }}/bytebase-action-config.yaml"
           
           # Get list of valid environments from config
           VALID_ENVS=$(yq eval 'keys | join(", ")' "$CONFIG_FILE")
