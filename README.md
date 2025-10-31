@@ -64,6 +64,37 @@ Set your service account password in the repository secrets setting with the nam
 > [!IMPORTANT]
 > The migration filename SHOULD comply to the naming scheme described in [bytebase-action](https://github.com/bytebase/bytebase/tree/main/action#global-flags) `--file-pattern` flag section.
 
+### How to configure declarative-release-action.yml
+
+Copy [declarative-release-action.yml](/.github/workflows/declarative-release-action.yml) to your repository.
+
+This workflow uses declarative schema management. With declarative mode, you define the desired end state of your database schema, and Bytebase automatically generates and applies the necessary changes.
+
+Modify the environment variables to match your setup.
+You need to edit the `create-rollout`, `deploy-to-test` and `deploy-to-prod` jobs.
+
+```yml
+    env:
+      BYTEBASE_URL: https://demo.bytebase.com
+      BYTEBASE_SERVICE_ACCOUNT: api@service.bytebase.com
+      BYTEBASE_SERVICE_ACCOUNT_SECRET: ${{ secrets.BYTEBASE_SERVICE_ACCOUNT_SECRET }}
+      BYTEBASE_PROJECT: "projects/hr"
+      # In the create-rollout job, set the database targets and file pattern
+      BYTEBASE_TARGETS: "instances/test-sample-instance/databases/hr_test,instances/prod-sample-instance/databases/hr_prod"
+      FILE_PATTERN: "schema/*.sql"
+      # In deploy-to-test job:
+      BYTEBASE_TARGET_STAGE: environments/test
+      # In deploy-to-prod job:
+      BYTEBASE_TARGET_STAGE: environments/prod
+```
+
+In the repository environments setting, create two environments: "test" and "prod". In the "prod" environment setting, configure "Deployment protection rules", check "Required reviewers" and add reviewers in order to rollout the "prod" environment after approval.
+
+Set your service account password in the repository secrets setting with the name `BYTEBASE_SERVICE_ACCOUNT_SECRET`.
+
+> [!IMPORTANT]
+> You must export your initial schema files by clicking **Export Schema** in the database detail page on Bytebase and saving them to the `schema/` directory.
+
 ### How to configure chatops-migrate.yml
 
 Copy [chatops-migrate.yml](/.github/workflows/chatops-migrate.yml) to your repository.
