@@ -5,7 +5,7 @@ CREATE TABLE "public"."audit" (
     "operation" text NOT NULL,
     "query" text,
     "user_name" text NOT NULL,
-    "changed_at" timestamp(6) with time zone DEFAULT CURRENT_TIMESTAMP,
+    "changed_at" timestamptz DEFAULT now(), 
     CONSTRAINT "audit_pkey" PRIMARY KEY (id)
 );
 
