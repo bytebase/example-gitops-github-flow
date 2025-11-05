@@ -1,4 +1,4 @@
--- COMMENT ON SCHEMA "public" IS 'standard public schema';
+COMMENT ON SCHEMA "public" IS 'standard public schema';
 
 CREATE TABLE "public"."audit" (
     "id" serial,
