@@ -18,6 +18,7 @@ CREATE INDEX "idx_audit_username" ON ONLY "public"."audit" (user_name);
 CREATE TABLE "public"."department" (
     "dept_no" text NOT NULL,
     "dept_name" text NOT NULL,
+    created_at timestamptz DEFAULT now(),
     CONSTRAINT "department_pkey" PRIMARY KEY (dept_no),
     CONSTRAINT "department_dept_name_key" UNIQUE (dept_name)
 );
