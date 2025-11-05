@@ -8,10 +8,10 @@ on:
       - "migrations-semver/*.sql"
 
 env:
-  BYTEBASE_URL: https://demo.bytebase.com
+  BYTEBASE_URL: https://valid-just-tadpole.ngrok-free.app
   BYTEBASE_SERVICE_ACCOUNT: api@service.bytebase.com # set service account via environment variable
   BYTEBASE_SERVICE_ACCOUNT_SECRET: ${{ secrets.BYTEBASE_SERVICE_ACCOUNT_SECRET }} # set service account secret via environment variable
-  BYTEBASE_PROJECT: "projects/hr"
+  BYTEBASE_PROJECT: "projects/project-sample"
 
 jobs:
   build:
