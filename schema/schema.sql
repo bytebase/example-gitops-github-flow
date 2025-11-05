@@ -1,5 +1,3 @@
-COMMENT ON SCHEMA "public" IS 'standard public schema';
-
 CREATE TABLE "public"."audit" (
     "id" serial,
     "operation" text NOT NULL,
