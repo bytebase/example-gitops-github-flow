@@ -22,7 +22,7 @@ Modify the environment variables to match your setup.
 
 ```yml
     env:
-      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # set GITHUB_TOKEN because the 'Check release' step needs it to comment the pull request with check results.
+      G_TOKEN: ${{ secrets.G_TOKEN }} # set G_TOKEN because the 'Check release' step needs it to comment the pull request with check results.
       BYTEBASE_URL: https://demo.bytebase.com
       BYTEBASE_SERVICE_ACCOUNT: ci@service.bytebase.com
       BYTEBASE_SERVICE_ACCOUNT_SECRET: ${{secrets.BYTEBASE_SERVICE_ACCOUNT_SECRET}}
@@ -45,7 +45,7 @@ You need to edit both deploy-to-test and deploy-to-prod jobs.
 
 ```yml
     env:
-      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      G_TOKEN: ${{ secrets.G_TOKEN }}
       BYTEBASE_URL: https://demo.bytebase.com
       BYTEBASE_SERVICE_ACCOUNT: ci@service.bytebase.com
       BYTEBASE_SERVICE_ACCOUNT_SECRET: ${{secrets.BYTEBASE_SERVICE_ACCOUNT_SECRET}}

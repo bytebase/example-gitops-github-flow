@@ -5,16 +5,18 @@ on:
     types: [created]
 
 env:
-  BYTEBASE_URL: https://demo.bytebase.com
-  BYTEBASE_SERVICE_ACCOUNT: api@service.bytebase.com # set service account via environment variable
-  BYTEBASE_SERVICE_ACCOUNT_SECRET: ${{ secrets.BYTEBASE_SERVICE_ACCOUNT_SECRET }} # set service account secret via environment variable
-  BYTEBASE_PROJECT: "projects/hr"
+env:
+  G_TOKEN: ${{ secrets.G_TOKEN }}
+  BYTEBASE_URL: ${{ secrets.BYTEBASE_URL }}
+  BYTEBASE_SERVICE_ACCOUNT: ${{ secrets.BYTEBASE_SERVICE_ACCOUNT }}
+  BYTEBASE_SERVICE_ACCOUNT_SECRET: ${{ secrets.BYTEBASE_SERVICE_ACCOUNT_SECRET }}
+  BYTEBASE_PROJECT: "projects/bcas-dev"
   FILE_PATTERN: "migrations-semver/*.sql"
 
 jobs:
   parse-command:
     if: github.event.issue.pull_request && startsWith(github.event.comment.body, '/migrate')
-    runs-on: ubuntu-latest
+    runs-on: runs-on: [self-hosted, k8s, bytebase]
     outputs:
       environment: ${{ steps.parse.outputs.environment }}
       valid-command: ${{ steps.parse.outputs.valid-command }}
