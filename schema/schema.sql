@@ -76,6 +76,11 @@ CREATE TABLE "public"."title" (
     CONSTRAINT "title_emp_no_fkey" FOREIGN KEY ("emp_no") REFERENCES "public"."employee" ("emp_no") ON DELETE CASCADE
 );
 
+CREATE TABLE "public"."test_singpass" (
+    "id" integer PRIMARY KEY,
+    "name" text NOT NULL
+);
+
 CREATE VIEW "public"."current_dept_emp" AS SELECT l.emp_no,
     d.dept_no,
     l.from_date,
