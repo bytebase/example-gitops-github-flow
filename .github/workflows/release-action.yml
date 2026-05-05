@@ -8,10 +8,10 @@ on:
       - "migrations-semver/*.sql"
 
 env:
-  BYTEBASE_URL: https://demo.bytebase.com
-  BYTEBASE_SERVICE_ACCOUNT: api@service.bytebase.com # set service account via environment variable
+  BYTEBASE_URL: https://bytebase.prd.pluspowerada.com
+  BYTEBASE_SERVICE_ACCOUNT: api-sample@service.bytebase.com # set service account via environment variable
   BYTEBASE_SERVICE_ACCOUNT_SECRET: ${{ secrets.BYTEBASE_SERVICE_ACCOUNT_SECRET }} # set service account secret via environment variable
-  BYTEBASE_PROJECT: "projects/hr"
+  BYTEBASE_PROJECT: "projects/plus-data-prod"
 
 jobs:
   build:
